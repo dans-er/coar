@@ -1,0 +1,56 @@
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd"
+	version="1.0">
+	<persistence-unit name="coar">
+
+		<provider>org.hibernate.ejb.HibernatePersistence</provider>
+
+		<class>nl.knaw.dans.coar.tika.TikaProfile</class>
+
+
+		<properties>
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
+			<property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver" />
+
+			<property name="hibernate.connection.username" value="coaruser" />
+			<property name="hibernate.connection.password" value="coarpass" />
+			<property name="hibernate.connection.url" value="jdbc:mysql://172.16.215.127/coar" />
+			<!-- property name="hibernate.connection.url" value="jdbc:mysql://localhost/coar" /-->
+
+			<!-- validate | update | create | create-drop -->
+			<property name="hibernate.hbm2ddl.auto" value="update" />
+
+			<!-- Echo all executed SQL to stdout -->
+			<property name="hibernate.show_sql" value="false" /> 
+			<property name="hibernate.format_sql" value="false" /> 
+
+		</properties>
+
+	</persistence-unit>
+
+	<persistence-unit name="coar-test">
+
+		<provider>org.hibernate.ejb.HibernatePersistence</provider>
+
+		<class>nl.knaw.dans.coar.tika.TikaProfile</class>
+
+		<properties>
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
+			<property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver" />
+
+			<property name="hibernate.connection.username" value="coaruser"/>
+			<property name="hibernate.connection.password" value="coarpass"/>
+			<property name="hibernate.connection.url" value="jdbc:mysql://172.16.215.127/coar-test" />
+
+			<!-- validate | update | create | create-drop -->
+			<property name="hibernate.hbm2ddl.auto" value="update" />
+
+			<!-- Echo all executed SQL to stdout -->
+			<property name="hibernate.show_sql" value="false" /> 
+			<property name="hibernate.format_sql" value="false" /> 
+
+		</properties>
+
+	</persistence-unit>
+</persistence>
