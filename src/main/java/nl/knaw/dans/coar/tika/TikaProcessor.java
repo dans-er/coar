@@ -93,6 +93,7 @@ public class TikaProcessor extends DefaultHandler implements PDFProcessor
 
         parser.parse(data, this, metadata, context);
 
+        currentProfile.setPageCount(pageCount);
     }
     
     @Override

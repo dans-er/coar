@@ -84,16 +84,23 @@ public class TikaProfile extends DBEntity
     @Column(name = "emd_archis_waarneming")
     private String emdArchisWaarneming;
     
-    @Column(name = "emd_archis_omn")
+    @Column(name = "emd_archis_onderzoeksmeldingsnr")
     private String emdArchisOMN;
     
     @Column(name = "emd_title")
     private String emdTitle;
     
+    @Column(name = "emd_publisher")
+    private String emdPublisher;
+    
     @Column(name = "emd_rightsholder")
     private String emdRightsHolder;
     
+    @Column(name = "emd_accessrights")
+    private String emdAccessRights;
     
+    @Column(name = "page_count")
+    private int pageCount;
     
     protected TikaProfile() {}
     
@@ -183,7 +190,9 @@ public class TikaProfile extends DBEntity
         setEmdArchisWaarneming(emd.getArchisWaarneming());
         setEmdArchisOMN(emd.getArchisOnderzoeksMeldingsNummer());
         setEmdRightsHolder(emd.getFirstRightsHolder());
+        setEmdAccessRights(emd.getAccessRights());
         setEmdTitle(emd.getFirstTitle());
+        setEmdPublisher(emd.getFirstPublisher());
         for (String type : emd.getDCMITypes()) {
             TikaMeta tm = new TikaMeta("emdDCMIType", type);
             addMeta(tm);
@@ -238,6 +247,16 @@ public class TikaProfile extends DBEntity
         this.emdTitle = emdTitle;
     }
 
+    public String getEmdPublisher()
+    {
+        return emdPublisher;
+    }
+
+    public void setEmdPublisher(String emdPublisher)
+    {
+        this.emdPublisher = emdPublisher;
+    }
+
     public String getEmdRightsHolder()
     {
         return emdRightsHolder;
@@ -248,6 +267,16 @@ public class TikaProfile extends DBEntity
         this.emdRightsHolder = emdRightsHolder;
     }
 
+    public String getEmdAccessRights()
+    {
+        return emdAccessRights;
+    }
+
+    public void setEmdAccessRights(String emdAccessRights)
+    {
+        this.emdAccessRights = emdAccessRights;
+    }
+
     public String getType()
     {
         return type;
@@ -256,6 +285,16 @@ public class TikaProfile extends DBEntity
     public String getSubtype()
     {
         return subtype;
+    }
+
+    public int getPageCount()
+    {
+        return pageCount;
+    }
+
+    public void setPageCount(int pageCount)
+    {
+        this.pageCount = pageCount;
     }
 
     public void setContentType(String contentType)

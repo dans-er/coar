@@ -59,12 +59,15 @@ public class CoordinateDetectorTest
     @Test
     public void upsidedown() {
         
-        String data = "Zuidoost: 198154 / 440619";
-        Pattern pat = Pattern.compile(".*?([Nn]oord|[Oo]ost|[Zz]uid|[Ww]est)[\\D]{1,20}(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]{1,10}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
+        String data = "Houtwiel-West " +
+                "194134/584422 194972/584799 " +
+                "194747/585183 194048/584648";
+        Pattern pat = Pattern.compile("([0-9]{1,3})[\\.,]{0,1}([0-9]{3})");
         Matcher m = pat.matcher(data);
-        if (m.matches()) {
-            System.err.println(m.group(2));
-            System.err.println(m.group(3));
+        while(m.find()) {
+            System.err.println(m.group());
+//            System.err.println(m.group(2));
+//            System.err.println(m.group(3));
         }
     }
     

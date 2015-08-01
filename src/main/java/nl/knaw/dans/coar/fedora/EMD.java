@@ -34,8 +34,18 @@ public class EMD
         return getFirstElementText(xpath);
     }
     
+    public String getFirstPublisher() {
+        String xpath = "/emd:easymetadata/emd:publisher/dc:publisher";
+        return getFirstElementText(xpath);
+    }
+    
     public String getFirstRightsHolder() {
         String xpath = "/emd:easymetadata/emd:rights/dct:rightsHolder";
+        return getFirstElementText(xpath);
+    }
+    
+    public String getAccessRights() {
+        String xpath = "/emd:easymetadata/emd:rights/dct:accessRights[@eas:schemeId='common.dcterms.accessrights']";
         return getFirstElementText(xpath);
     }
     

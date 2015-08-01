@@ -39,6 +39,18 @@ public class EMDTest
     }
     
     @Test
+    public void getFirstPublisher() throws Exception {
+        EMD emd = new EMD(readDoc("emd2.xml"));
+        assertEquals("ADC ArcheoProjecten", emd.getFirstPublisher());
+    }
+    
+    @Test
+    public void getAccessRights() throws Exception {
+        EMD emd = new EMD(readDoc("emd.xml"));
+        assertEquals("GROUP_ACCESS", emd.getAccessRights());
+    }
+    
+    @Test
     public void getFirstRightsHolder() throws Exception {
         EMD emd = new EMD(readDoc("emd.xml"));
         assertEquals("Archeologisch Onderzoek Leiden", emd.getFirstRightsHolder());

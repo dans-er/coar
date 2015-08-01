@@ -21,21 +21,22 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
     
     private TikaProcessor parentProcessor;
     private StringBuilder elementBuilder;
+    
+      
+    // on all data lines
+    private Pattern thePattern = Pattern.compile(".*?[Cc]o.{1,2}rd.*?(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]{1,10}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
+    private Pattern nozwPattern = Pattern.compile(".*?([Nn]oord|[Oo]ost|[Zz]uid|[Ww]est)[\\D]{1,20}(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]{1,10}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
+    private Pattern xyPattern = Pattern.compile(".*?[Xx]:[ ]{0,2}(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]*[Yy]:[ ]{0,2}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
+    
+    // indicating patterns, if found look in next data lines for rdPattern 
     private Pattern coorPattern = Pattern.compile(".*[Cc][Oo].{1,2}[Rr][Dd][Ii][Nn][Aa].*");
     private Pattern hoekpuntenPattern = Pattern.compile(".*[hH][Oo][Ee][Kk][Pp][Uu][Nn][Tt].*");
     
+    // a single coordinate
     private Pattern rdPattern = Pattern.compile("([0-9]{1,3})[\\.,]{0,1}([0-9]{3})");
-                                      
-    private Pattern thePattern = Pattern.compile(".*?[Cc]o.{1,2}rd.*?(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]{1,10}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
     
-    private Pattern nozwPattern = Pattern.compile(".*?([Nn]oord|[Oo]ost|[Zz]uid|[Ww]est)[\\D]{1,20}(\\d{1,3}[\\.,]{0,1}\\d{3})[\\D]{1,10}(\\d{1,3}[\\.,]{0,1}\\d{3}).*?");
-    private Pattern noPeriodPattern = Pattern.compile(".*?[Cc]o.{1,2}rdinaten:[ ]*(\\d{4,6})[\\D]*(\\d{4,6}).*?");
-    private Pattern upFrontPattern = Pattern.compile(".*?(\\d{4,6})[\\D]*(\\d{4,6})[ ]{0,5}[Cc]o.{1,2}rdinaten:.*?");
-    private Pattern xyNoPeriodPattern = Pattern.compile(".*?[Xx]:[ ]{0,2}(\\d{4,6})[\\D]*[Yy]:[ ]{0,2}(\\d{4,6}).*?");
-    private Pattern xyPattern = Pattern.compile(".*?[Xx]:[ ]{0,2}(\\d{1,3}[\\.,]\\d{3})[\\D]*[Yy]:[ ]{0,2}(\\d{1,3}[\\.,]\\d{3}).*?");
     
     private String currentX;
-    //private boolean pointComplete = true;
     private int linesAfterPointAdded;
     private int linesAfterIndicator;
     private int linesAfterXFound;
@@ -71,13 +72,14 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
     public void endElement(String uri, String localName, String qName) throws SAXException
     {
         String data = elementBuilder.toString();
+        //System.err.println(data);
 
         if (!"".equals(data)) {
             linesAfterPointAdded++;
             linesAfterIndicator++;
             linesAfterXFound++;
         }
-        if (linesAfterXFound > 3) {
+        if (linesAfterXFound > 3) { // a single coordinate was found, but after 3 lines forget about it.
             currentX = null;
         }
         boolean hasIndicator = hasIndicator(data);
@@ -88,19 +90,6 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
         }
         tryPattern(data, thePattern, 1); // <== method 1
         tryPattern(data, xyPattern, 6);
-        tryPattern(data, xyNoPeriodPattern, 7);
-        
-//        boolean found = tryPattern(data, noordoostPattern, 100);
-//        found = tryPattern(data, zuidoostPattern, 101) || found;
-//        found = tryPattern(data, zuidwestPattern, 102) || found;
-//        found = tryPattern(data, noordwestPattern, 103) || found;
-//        
-//        if (!found) {
-//            found = tryPattern(data, noordPattern, 110) || found;
-//            found = tryPattern(data, oostPattern, 111) || found;
-//            found = tryPattern(data, zuidPattern, 112) || found;
-//            found = tryPattern(data, westPattern, 113) || found;
-//        }
         Matcher m = nozwPattern.matcher(data);
         while(m.find()) {
             String x = m.group(2);
@@ -114,6 +103,7 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
     public void characters(char[] ch, int start, int length) throws SAXException
     {
         elementBuilder.append(ch, start, length);
+        //System.err.println(elementBuilder.toString());
     }
     
     protected boolean hasIndicator(String data) {
@@ -138,12 +128,6 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
         
         if (!found) {
             found = tryCummulative(data); // <== 2 and 3 
-        }
-        if (!found) {
-            found = tryPattern(data, noPeriodPattern, 4);
-        }
-        if (!found) {
-            found = tryPattern(data, upFrontPattern, 5);
         }
         
     }
@@ -180,10 +164,12 @@ public class CoordinateDetector extends DefaultHandler implements TikaBodyHandle
             foundOne = true;
             coordinates[count] = coor;
             count++;
+            //System.err.println(count + " " + coordinates[0] + "/" + coordinates[1]);
             if (count == 2) {
                 count = 0;
                 addPoint(coordinates[0], coordinates[1], data, 2); // <== method 2
                 logger.debug("Found {}/{} with {}", coordinates[0], coordinates[1], rdPattern.toString());
+                coordinates[0] = null; coordinates[1] = null;
             }
         }
         if (count == 1 && currentX != null) {

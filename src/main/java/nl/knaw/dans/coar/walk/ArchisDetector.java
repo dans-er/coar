@@ -29,53 +29,27 @@ public class ArchisDetector extends DefaultHandler implements TikaBodyHandler
     private List<String> negKeyList = new ArrayList<String>();
     private List<String> negDataList = new ArrayList<String>();
     
-    private Pattern pDirectNumber = Pattern.compile(".*?([a-zA-Z\\-]*nummer[a-zA-Z\\-\\(\\)/:]*\\s{0,1}[a-zA-Z\\-\\(\\)/:]*)[\\D]{1,25}([0-9\\.]{4,10}).*?");
-    private Pattern pDirectCode = Pattern.compile(".*?([a-zA-Z\\-]*code[a-zA-Z\\-\\(\\)/:]*\\s{0,1}[a-zA-Z\\-\\(\\)/:]*)[\\D]{1,25}([0-9\\.]{4,10}).*?");
+    // pNummerCodeNr much slower than pNummerCodeNr1
+    //private Pattern pNummerCodeNr = Pattern.compile(".*?([a-zA-Z\\-\\.]*\\s{0,1}[a-zA-Z\\-]*([Nn]ummer|[Cc]ode|nr\\.)[a-zA-Z\\-\\(\\)/:]*\\s{0,1}[a-zA-Z\\-\\(\\)/:]*)[\\D]{1,25}([0-9\\.]{4,10}).*?");
+    private Pattern pNummerCodeNr1 = Pattern.compile(".*?([a-zA-Z\\-\\.]*([Nn]ummer|[Cc]ode|nr\\.)[a-zA-Z\\-\\(\\)/:]*\\s{0,1}[a-zA-Z\\-\\(\\)/:]*)[\\D]{1,25}([0-9\\.]{4,10}).*?");
+    
     private Pattern pKeyOnly = Pattern.compile("([a-zA-Z\\-]*nummer[a-zA-Z\\-\\(\\)/:]*)");
     private Pattern pNummer = Pattern.compile("([0-9\\.]{4,15})");
 
     public ArchisDetector()
     {
-        negKeyList.add("code");
-        
-        negKeyList.add("fotonummer");
-        negKeyList.add("fotonummers");
-        
-        negKeyList.add("genummerd");
-        negKeyList.add("genummerde");
-        
-        negKeyList.add("nummer");
-        negKeyList.add("nummers");
-        
         negKeyList.add("boornummer");
-        negKeyList.add("boornummers");
-
+        negKeyList.add("fotonummer");        
+        negKeyList.add("genummerd");
         negKeyList.add("laagnummer");
-        negKeyList.add("laagnummers");
-        
-        negKeyList.add("perceel-nummer");
-        negKeyList.add("perceel-nummers");
-        negKeyList.add("perceelnummer");
-        negKeyList.add("perceelnummers");
-        negKeyList.add("perceelsnummer");
-        negKeyList.add("perceelsnummers");
-        
-        negKeyList.add("putnummer");
-        negKeyList.add("putnummers");
-        
+        negKeyList.add("perceel");
+        negKeyList.add("putnummer");  
         negKeyList.add("spoornummer");
-        negKeyList.add("spoornummers");
         negKeyList.add("sporennummer");
-        negKeyList.add("sporennummers");
-        
         negKeyList.add("versienummer");
-        negKeyList.add("versienummers");
-        
         negKeyList.add("vondstnummer");
-        negKeyList.add("vondstnummers");
-
         negKeyList.add("weeknummer");
-        negKeyList.add("weeknummers");
+        
         
         negDataList.add("niet van toepassing");
     }
@@ -114,20 +88,12 @@ public class ArchisDetector extends DefaultHandler implements TikaBodyHandler
     protected void analyze(String data) {
         boolean found = false;
         
-        Matcher m = pDirectNumber.matcher(data);
+        Matcher m = pNummerCodeNr1.matcher(data);
         while (m.find()) {
             found = true;
             String key = m.group(1);
-            String value = m.group(2);
+            String value = m.group(3);
             addNummer(key, value, data, 1); // <== method 1
-        }
-
-        m = pDirectCode.matcher(data);
-        while (m.find()) {
-            found = true;
-            String key = m.group(1);
-            String value = m.group(2);
-            addNummer(key, value, data, 2); // <== method 2
         }
 
         String dataLow = data.toLowerCase();
@@ -155,12 +121,20 @@ public class ArchisDetector extends DefaultHandler implements TikaBodyHandler
 
     private void addNummer(String key, String value, String data, int method)
     {
-        if (negKeyList.contains(key.toLowerCase().replaceAll(":", "").trim())) {
+        String lowerKey = key.toLowerCase();
+        for (String s : negKeyList) {
+            if (lowerKey.contains(s)) return;
+        }
+        
+        String lowerKeyT = lowerKey.replaceAll(":", "").trim();
+        if ("nummer".equals(lowerKeyT) || "nummers".equals(lowerKeyT) || "code".equals(lowerKeyT) || "nr.".equals(lowerKeyT)) {
             return;
         }
+        if (key.startsWith(".")) key = key.substring(1);
+            
         nummerIndex++;
         ArchisNummer an = new ArchisNummer();
-        an.setKey(key);
+        an.setKey(key.trim());
         an.setValue(value);
         an.setSource("page:" + parentProcessor.getPageCount());
         an.setNummerIndex(nummerIndex);
