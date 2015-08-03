@@ -2,12 +2,14 @@ package nl.knaw.dans.coar.fedora;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.yourmediashelf.fedora.client.request.DescribeRepository;
 import com.yourmediashelf.fedora.client.response.DescribeRepositoryResponse;
 import com.yourmediashelf.fedora.generated.access.FedoraRepository;
 
+@Ignore
 public class FedoraConnectorTest
 {
        @Test

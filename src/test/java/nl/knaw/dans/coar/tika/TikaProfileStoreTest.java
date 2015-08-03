@@ -6,8 +6,10 @@ import nl.knaw.dans.coar.geo.RDPoint;
 import nl.knaw.dans.coar.rdb.JPAUtil;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class TikaProfileStoreTest
 {
     

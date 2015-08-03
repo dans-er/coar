@@ -8,8 +8,10 @@ import java.util.regex.Pattern;
 import nl.knaw.dans.coar.tika.TikaProcessor;
 import nl.knaw.dans.coar.tika.TikaProfile;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class CoordinateDetectorTest
 {
     

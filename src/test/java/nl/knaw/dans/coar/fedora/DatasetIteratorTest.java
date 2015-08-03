@@ -2,10 +2,12 @@ package nl.knaw.dans.coar.fedora;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.yourmediashelf.fedora.generated.management.DatastreamProfile;
 
+@Ignore
 public class DatasetIteratorTest extends AbstractFedoraTest
 {
     

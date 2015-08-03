@@ -3,8 +3,10 @@ package nl.knaw.dans.coar.walk;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class ArchisDetectorTest
 {
     

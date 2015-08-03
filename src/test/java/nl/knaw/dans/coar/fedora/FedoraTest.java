@@ -5,8 +5,10 @@ import java.util.List;
 
 import org.jdom2.Document;
 import org.jdom2.output.XMLOutputter;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class FedoraTest extends AbstractFedoraTest
 {
     

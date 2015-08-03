@@ -22,7 +22,7 @@ public class CoarAppFixed
         
         Conveyor conveyor = new Conveyor(dbiter);
         conveyor.setPdfProcessor(processor);
-        conveyor.setSavingFiles(true);
+        //conveyor.setSavingFiles(true);
         conveyor.run();
 
     }

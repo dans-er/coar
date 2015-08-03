@@ -156,6 +156,7 @@ public class Conveyor
         }
         else
         {
+            logger.info("Redo analysis of {}", fileId);
             currentProfile.getMetadata().clear();
             currentProfile.getSpatials().clear();
             currentProfile.getArchisNummers().clear();

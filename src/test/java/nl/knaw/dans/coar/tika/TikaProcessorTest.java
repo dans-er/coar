@@ -13,9 +13,11 @@ import nl.knaw.dans.coar.walk.ArchisDetector;
 import nl.knaw.dans.coar.walk.CoordinateDetector;
 
 import org.apache.tika.exception.TikaException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
+@Ignore
 public class TikaProcessorTest
 {
     

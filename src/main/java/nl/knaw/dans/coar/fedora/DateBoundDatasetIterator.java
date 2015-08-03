@@ -11,6 +11,10 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.yourmediashelf.fedora.client.FedoraClientException;
+import com.yourmediashelf.fedora.client.request.FindObjects;
+import com.yourmediashelf.fedora.client.response.FindObjectsResponse;
+
 public class DateBoundDatasetIterator extends DatasetIterator
 {
     
@@ -76,6 +80,18 @@ public class DateBoundDatasetIterator extends DatasetIterator
             .append("cDate%3E%3D").append(getFormat().print(start)).append(" ")
             .append("cDate%3C").append(getFormat().print(end))
             .toString();
+    }
+    
+    protected void startFindDatasets() throws FedoraClientException {
+        FindObjectsResponse response = new FindObjects() //
+            .query(getQuery()) //
+            .pid() //
+            .maxResults(getMaxResults()) //
+            .execute();
+        pids = response.getPids();
+        token = null; // we do all datasets for cDate.
+        pidIter = pids.iterator();
+        logger.info("Start find files found {} identifiers for {}.", pids.size(), getFormat().print(getDatePointer()));
     }
     
     public DateTime getStartDate()

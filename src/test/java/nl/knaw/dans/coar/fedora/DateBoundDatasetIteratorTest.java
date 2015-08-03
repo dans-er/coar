@@ -1,7 +1,9 @@
 package nl.knaw.dans.coar.fedora;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class DateBoundDatasetIteratorTest extends AbstractFedoraTest
 {
     

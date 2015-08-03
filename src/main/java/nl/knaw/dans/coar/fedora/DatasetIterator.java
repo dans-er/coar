@@ -18,9 +18,9 @@ public class DatasetIterator implements Iterator<String>
     
     private static Logger logger = LoggerFactory.getLogger(DatasetIterator.class);
     
-    private List<String> pids;
-    private Iterator<String> pidIter;
-    private String token = "start";
+    protected List<String> pids;
+    protected Iterator<String> pidIter;
+    protected String token = "start";
     private String nextIdentifier = "start";
     
     public boolean hasNext()
@@ -66,20 +66,20 @@ public class DatasetIterator implements Iterator<String>
     
     protected boolean hasNextPid() throws FedoraClientException {
         if (pids == null) {
-            startFindFiles();
+            startFindDatasets();
         }
         if (!pidIter.hasNext() && token != null) {
-            continueFindFiles();
+            continueFindDatasets();
         }
         return pidIter.hasNext();
     }
     
     protected String nextPid() throws FedoraClientException {
         if (pids == null) {
-            startFindFiles();
+            startFindDatasets();
         }
         if (!pidIter.hasNext() && token != null) {
-            continueFindFiles();
+            continueFindDatasets();
         }
         return pidIter.next();
     }
@@ -89,11 +89,15 @@ public class DatasetIterator implements Iterator<String>
         return "pid%7Eeasy-dataset:*";
     }
     
-    protected void startFindFiles() throws FedoraClientException {
+    protected int getMaxResults() {
+        return MAX_RESULTS;
+    }
+    
+    protected void startFindDatasets() throws FedoraClientException {
         FindObjectsResponse response = new FindObjects() //
             .query(getQuery()) //
             .pid() //
-            .maxResults(MAX_RESULTS) //
+            .maxResults(getMaxResults()) //
             .execute();
         pids = response.getPids();
         token = response.getToken();
@@ -101,7 +105,7 @@ public class DatasetIterator implements Iterator<String>
         logger.debug("Start find files found {} identifiers.", pids.size());
     }
     
-    protected void continueFindFiles() throws FedoraClientException {
+    protected void continueFindDatasets() throws FedoraClientException {
         FindObjectsResponse response = new FindObjects() //
             .sessionToken(token) //
             .pid() //

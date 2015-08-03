@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+	   					   
+	<bean id="fedora-connector" class="nl.knaw.dans.coar.fedora.FedoraConnector">
+		<!-- ### VALUE(S) REQUIRED ### -->
+		<!-- fedora server, user and password -->
+		<property name="host" value="host"/>
+		<property name="port" value="1234"/>
+		<property name="path" value="path"/>
+		<property name="user" value="user"/>
+		<property name="pass" value="pass"/>
+	</bean>
+	
+	<bean id="conveyor" class="nl.knaw.dans.coar.shed.Conveyor">
+		<constructor-arg ref="dataset-iterator"/>
+		<property name="pdfProcessor" ref="pdf-processor"/>
+	</bean>
+	
+	<bean id="dataset-iterator" class="nl.knaw.dans.coar.fedora.DateBoundDatasetIterator"/>
+	
+	<bean id="pdf-processor" class="nl.knaw.dans.coar.tika.TikaProcessor">
+		<property name="bodyHandlers">
+			<list>
+				<ref bean="coordinate-detector"/>
+				<ref bean="archis-detector"/>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="coordinate-detector" class="nl.knaw.dans.coar.walk.CoordinateDetector"/>
+	
+	<bean id="archis-detector" class="nl.knaw.dans.coar.walk.ArchisDetector"/>
+
+</beans>
