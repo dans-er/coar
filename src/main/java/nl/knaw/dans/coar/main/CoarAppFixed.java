@@ -1,7 +1,7 @@
 package nl.knaw.dans.coar.main;
 
-import nl.knaw.dans.coar.fedora.DateBoundDatasetIterator;
 import nl.knaw.dans.coar.fedora.FedoraConnector;
+import nl.knaw.dans.coar.fedora.PerDateDatasetIterator;
 import nl.knaw.dans.coar.shed.Conveyor;
 import nl.knaw.dans.coar.tika.TikaProcessor;
 import nl.knaw.dans.coar.walk.ArchisDetector;
@@ -15,7 +15,7 @@ public class CoarAppFixed
         FedoraConnector connector = new FedoraConnector();
         connector.connect();
         
-        DateBoundDatasetIterator dbiter = new DateBoundDatasetIterator();
+        PerDateDatasetIterator dbiter = new PerDateDatasetIterator();
         TikaProcessor processor = new TikaProcessor();
         processor.addBodyHandler(new CoordinateDetector());
         processor.addBodyHandler(new ArchisDetector());

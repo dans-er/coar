@@ -15,8 +15,8 @@ import nl.knaw.dans.coar.fedora.Fedora;
 import nl.knaw.dans.coar.rdb.JPAUtil;
 import nl.knaw.dans.coar.tika.TikaProfile;
 import nl.knaw.dans.coar.tika.TikaProfileStore;
+import nl.knaw.dans.coar.util.Reporter;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +38,14 @@ public class Conveyor
     private Fedora fedora;
     private PDFProcessor pdfProcessor;
     
+    private ProfileIdentifierFilter idFilter;
+    private int fileCount;
+    
     public Conveyor(DatasetIterator datasetIterator) {
         this.datasetIterator = datasetIterator;
         fedora = Fedora.instance();
         store = new TikaProfileStore(JPAUtil.getEntityManager());
+        idFilter = new ProfileIdentifierFilter();
     }
     
     public PDFProcessor getPdfProcessor()
@@ -89,10 +93,11 @@ public class Conveyor
             catch (Exception e)
             {
                 logger.error("While fetching EMD for {}", datasetId);
-                report("error_emd.csv", datasetId + ";" + e.getMessage());
+                Reporter.report("error_emd.csv", datasetId + ";" + e.getMessage());
                 continue;
             }
-            if ("ARCHAEOLOGY".equals(emd.getMetadataFormat())) {
+            if ("ARCHAEOLOGY".equals(emd.getMetadataFormat())
+                    || emd.getAudiences().contains("easy-discipline:2")) {
                 processArchDataset(datasetId, emd);
             }
         }
@@ -109,25 +114,27 @@ public class Conveyor
         catch (Exception e)
         {
             logger.error("While fetching identifiers for {}", datasetId);
-            report("error_file_ids.csv", datasetId + ";" + e.getMessage());
+            Reporter.report("error_file_ids.csv", datasetId + ";" + e.getMessage());
             return;
         }
         if (fileIds.size() > 1000) {
             logger.info("Too many files: {}", datasetId);
-            report("gt_1000_files.csv", datasetId + ";" + fileIds.size());
+            Reporter.report("gt_1000_files.csv", datasetId + ";" + fileIds.size());
         }
         for (String fileId : fileIds) {
-            try
-            {
-                DatastreamProfile dsProfile = fedora.getDSProfile(fileId);
-                if ("application/pdf".equals(dsProfile.getDsMIME())) {
-                    processPDF(datasetId, emd, fileId, dsProfile);
+            if (idFilter.accept(fileId)) {
+                try
+                {
+                    DatastreamProfile dsProfile = fedora.getDSProfile(fileId);
+                    if ("application/pdf".equals(dsProfile.getDsMIME())) {
+                        processPDF(datasetId, emd, fileId, dsProfile);
+                    }
                 }
-            }
-            catch (FedoraClientException e)
-            {
-                logger.error("While fetching dsProfile for {}", fileId);
-                report("error_dsprofile.csv", datasetId + ";" + fileId + ";" + e.getMessage());
+                catch (FedoraClientException e)
+                {
+                    logger.error("While fetching dsProfile for {}", fileId);
+                    Reporter.report("error_dsprofile.csv", datasetId + ";" + fileId + ";" + e.getMessage());
+                }
             }
         }
         
@@ -135,7 +142,13 @@ public class Conveyor
 
     protected void processPDF(String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile)
     {
-        logger.info("Processing pdf {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
+//        if ("easy-file:1288551".equals(fileId) 
+//                || "easy-file:1298487".equals(fileId)
+//                || "easy-file:1302237".equals(fileId)) {
+//            logger.info("XXXXXXXXXXXX Not processing {}", fileId);
+//            return;
+//        }
+        logger.info(">>>>>>>>>>>>> Start processing pdf {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
         
         if (currentTx != null)
         {
@@ -147,31 +160,51 @@ public class Conveyor
             }
             store.clear();
         }
+        
+        
         currentTx = store.newTransAction();
         currentTx.begin();
-        TikaProfile currentProfile = store.findByNaturalId(fileId);
-        if (currentProfile == null)
-        {
-            currentProfile = new TikaProfile(fileId, datasetId);
-        }
-        else
-        {
-            logger.info("Redo analysis of {}", fileId);
-            currentProfile.getMetadata().clear();
-            currentProfile.getSpatials().clear();
-            currentProfile.getArchisNummers().clear();
-        }
         
-        currentProfile.setDatasetId(datasetId);
-        currentProfile.setDsLabel(dsProfile.getDsLabel());
-        currentProfile.setDsMediatype(dsProfile.getDsMIME());
-        currentProfile.setDsState(dsProfile.getDsState());
-        if (dsProfile.getDsSize() != null)
-            currentProfile.setDsSize(dsProfile.getDsSize().longValue());
-        if (dsProfile.getDsCreateDate() != null)
-            currentProfile.setDsCreationDate(dsProfile.getDsCreateDate().toGregorianCalendar().getTime());
+        //TikaProfile tikaProfile = store.findByNaturalId(fileId);
+        try
+        {
+            TikaProfile profile = processProfile(datasetId, emd, fileId, dsProfile);
+            store.saveOrUpdate(profile);
+            currentTx.commit();
+            fileCount++;
+        }
+        catch (Exception e)
+        {
+            logger.error("While fetching dsProfile for {}", fileId);
+            Reporter.report("error_file_data.csv", datasetId + ";" + fileId + ";" + e.getMessage());
+            currentTx.rollback();
+        } finally {
+            store.clear();
+            currentTx = null;
+            logger.info("///////// READY processing #{}# pdf {} {} {}", fileCount, datasetId, fileId, dsProfile.getDsLabel());
+        }
+        ///////////////////////////////////////////////////////////////////////////
+    }
+    
 
-        currentProfile.setEmd(emd);
+    private TikaProfile processProfile(String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile) throws Exception
+    {
+
+        logger.info("Creating new profile for {}", dsProfile.getDsLabel());
+        
+        TikaProfile profile = new TikaProfile(fileId, datasetId);
+        
+        profile.setDatasetId(datasetId);
+        profile.setDsLabel(dsProfile.getDsLabel());
+        profile.setDsMediatype(dsProfile.getDsMIME());
+        profile.setDsState(dsProfile.getDsState());
+        if (dsProfile.getDsSize() != null)
+            profile.setDsSize(dsProfile.getDsSize().longValue());
+        if (dsProfile.getDsCreateDate() != null)
+            profile.setDsCreationDate(dsProfile.getDsCreateDate().toGregorianCalendar().getTime());
+
+        profile.setEmd(emd);
+        logger.info("Created new profile for {}", profile.getDsLabel());
         
         InputStream currentData = null;
         try
@@ -179,25 +212,21 @@ public class Conveyor
             currentData = fedora.getFileData(fileId);
             if (isSavingFiles()) {
                 currentData = saveFile(datasetId, emd, fileId, dsProfile, currentData);
-            } 
-            getPdfProcessor().process(currentProfile, currentData);
-            store.saveOrUpdate(currentProfile);
-            currentTx.commit();
+            }
+            logger.info("Analyzing {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
+            getPdfProcessor().process(profile, currentData);
         }
         catch (Exception e)
         {
             logger.error("While fetching dsProfile for {}", fileId);
-            report("error_file_data.csv", datasetId + ";" + fileId + ";" + e.getMessage());
-            currentTx.rollback();
+            Reporter.report("error_file_data.csv", datasetId + ";" + fileId + ";" + e.getMessage());
         } finally {
             IOUtils.closeQuietly(currentData);
-            store.clear();
-            currentProfile = null;
-            currentTx = null;
+            
         }
-        
+        return profile;
     }
-    
+
     private InputStream saveFile(String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile, InputStream data) throws IOException
     {
         File dir = new File("COAR_FILES");
@@ -223,23 +252,6 @@ public class Conveyor
         IOUtils.closeQuietly(fos);
         
         return new FileInputStream(new File(fIdDir, filename));
-    }
-
-
-    protected void report(String file, String line) {
-        File reports = new File("reports");
-        if (!reports.exists()) {
-            reports.mkdir();
-        }
-        File report = new File(reports, file);
-        try
-        {
-            FileUtils.writeStringToFile(report, line, "UTF-8", true);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
 }

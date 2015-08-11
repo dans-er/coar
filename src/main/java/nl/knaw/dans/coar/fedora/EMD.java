@@ -5,6 +5,7 @@ import java.util.List;
 
 import nl.knaw.dans.coar.geo.RDBox;
 import nl.knaw.dans.coar.geo.RDPoint;
+import nl.knaw.dans.coar.util.Reporter;
 
 import org.jdom2.Document;
 import org.jdom2.Element;
@@ -12,10 +13,13 @@ import org.jdom2.Namespace;
 import org.jdom2.filter.Filters;
 import org.jdom2.xpath.XPathExpression;
 import org.jdom2.xpath.XPathFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class EMD
 {
+    private static Logger logger = LoggerFactory.getLogger(EMD.class);
     
     private final static XPathFactory xFactory = XPathFactory.instance();
     protected final static Namespace NS_EMD = Namespace.getNamespace("emd", "http://easy.dans.knaw.nl/easy/easymetadata/");
@@ -74,28 +78,57 @@ public class EMD
         return getElementValues(xpath);
     }
     
-    public List<RDPoint> getSpatialPoints() {
+    public List<String> getAudiences() {
+        List<String> audiences = new ArrayList<String>();
+        String xpath = "/emd:easymetadata/emd:audience/dct:audience[@eas:schemeId='custom.disciplines']";
+        List<Element> elements = evaluate(xpath);
+        for (Element element : elements) {
+            String audId = element.getTextNormalize();
+            audiences.add(audId);
+        }
+        return audiences;
+    }
+    
+    public List<RDPoint> getSpatialPoints(String datasetId) {
         String xpath = "/emd:easymetadata/emd:coverage/eas:spatial/eas:point[@eas:scheme='RD']";
         List<Element> elements = evaluate(xpath);
         List<RDPoint> points = new ArrayList<RDPoint>();
         for (Element element : elements) {
-            String x = element.getChild("x", NS_EAS).getTextNormalize();
-            String y = element.getChild("y", NS_EAS).getTextNormalize();
-            points.add(new RDPoint(x, y));
+            
+            try
+            {
+                String x = element.getChild("x", NS_EAS).getTextNormalize();
+                String y = element.getChild("y", NS_EAS).getTextNormalize();
+                points.add(new RDPoint(x, y));
+            }
+            catch (Exception e)
+            {
+                Reporter.report("error_emd.csv", datasetId + ";" + e.getMessage());
+                logger.error("While adding spatial points for " + datasetId, e);
+            }
         }
         return points;
     }
     
-    public List<RDBox> getSpatialBoxes() {
+    public List<RDBox> getSpatialBoxes(String datasetId) {
         String xpath = "/emd:easymetadata/emd:coverage/eas:spatial/eas:box[@eas:scheme='RD']";
         List<Element> elements = evaluate(xpath);
         List<RDBox> boxes = new ArrayList<RDBox>();
         for (Element element : elements) {
-            String north = element.getChild("north", NS_EAS).getTextNormalize();
-            String east = element.getChild("east", NS_EAS).getTextNormalize();
-            String south = element.getChild("south", NS_EAS).getTextNormalize();
-            String west = element.getChild("west", NS_EAS).getTextNormalize();
-            boxes.add(new RDBox(north, east, south, west));
+            
+            try
+            {
+                String north = element.getChild("north", NS_EAS).getTextNormalize();
+                String east = element.getChild("east", NS_EAS).getTextNormalize();
+                String south = element.getChild("south", NS_EAS).getTextNormalize();
+                String west = element.getChild("west", NS_EAS).getTextNormalize();
+                boxes.add(new RDBox(north, east, south, west));
+            }
+            catch (Exception e)
+            {
+                Reporter.report("error_emd.csv", datasetId + ";" + e.getMessage());
+                logger.error("While adding spatial boxes for " + datasetId, e);
+            }
         }
         return boxes;
     }

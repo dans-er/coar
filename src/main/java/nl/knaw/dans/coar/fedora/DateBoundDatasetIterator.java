@@ -91,7 +91,7 @@ public class DateBoundDatasetIterator extends DatasetIterator
         pids = response.getPids();
         token = null; // we do all datasets for cDate.
         pidIter = pids.iterator();
-        logger.info("Start find files found {} identifiers for {}.", pids.size(), getFormat().print(getDatePointer()));
+        logger.info("Start find datasets found {} identifiers for {}.", pids.size(), getFormat().print(getDatePointer()));
     }
     
     public DateTime getStartDate()

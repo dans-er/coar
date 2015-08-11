@@ -1,5 +1,7 @@
 package nl.knaw.dans.coar.tika;
 
+import java.util.List;
+
 import javax.persistence.EntityTransaction;
 
 import nl.knaw.dans.coar.geo.RDPoint;
@@ -15,7 +17,7 @@ public class TikaProfileStoreTest
     
     @BeforeClass
     public static void beforeClass() {
-        JPAUtil.setTestState(true);
+        JPAUtil.setTestState(false);
     }
     
     @Test
@@ -31,6 +33,20 @@ public class TikaProfileStoreTest
         store.saveOrUpdate(tp);
         tx.commit();
         store.clear();
+    }
+    
+    @Test
+    public void getDistinctDatasetIds() throws Exception {
+        TikaProfileStore store = new TikaProfileStore(JPAUtil.getEntityManager());
+        List<String> list = store.getDistinctDatasetIds();
+        for (String datasetId : list) {
+            System.err.println(datasetId);
+            List<TikaProfile> dsProfiles = store.getProfiles(datasetId);
+            for (TikaProfile tp : dsProfiles) {
+                
+                
+            }
+        }
     }
 
 }

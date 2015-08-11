@@ -23,7 +23,10 @@ public class RDBox
     }
     
     public RDBox(String north, String east, String south, String west) {
-        this(Integer.parseInt(north), Integer.parseInt(east), Integer.parseInt(south), Integer.parseInt(west));
+        this(Integer.parseInt(north.replaceAll("[^0-9]+", "")), 
+                Integer.parseInt(east.replaceAll("[^0-9]+", "")), 
+                Integer.parseInt(south.replaceAll("[^0-9]+", "")), 
+                Integer.parseInt(west.replaceAll("[^0-9]+", "")));
     }
 
     public int getNorthLimit()

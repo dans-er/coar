@@ -92,7 +92,7 @@ public class EMDTest
     @Test
     public void getRDPoints() throws Exception {
         EMD emd = new EMD(readDoc("emd2.xml"));
-        List<RDPoint> points = emd.getSpatialPoints();
+        List<RDPoint> points = emd.getSpatialPoints(null);
         assertEquals(2, points.size());  
         assertTrue(points.contains(new RDPoint(211229, 467610)));
         assertTrue(points.contains(new RDPoint(211537, 467435)));
@@ -101,10 +101,18 @@ public class EMDTest
     @Test
     public void getRDBoxes() throws Exception {
         EMD emd = new EMD(readDoc("emd3.xml"));
-        List<RDBox> boxes = emd.getSpatialBoxes();
+        List<RDBox> boxes = emd.getSpatialBoxes(null);
         assertEquals(2, boxes.size());
         assertTrue(boxes.contains(new RDBox(399055, 111470, 399025, 111350)));
         assertTrue(boxes.contains(new RDBox(399000, 111400, 398000, 111300)));
+    }
+    
+    @Test
+    public void getAudiences() throws Exception {
+        EMD emd = new EMD(readDoc("emd.xml"));
+        List<String> audiences = emd.getAudiences();
+        assertEquals(1, audiences.size());
+        assertEquals("easy-discipline:2", audiences.get(0));
     }
 
 }

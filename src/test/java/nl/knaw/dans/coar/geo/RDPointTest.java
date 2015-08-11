@@ -39,5 +39,17 @@ public class RDPointTest
         assertEquals(124188, rdp.getX());
         assertEquals(525251, rdp.getY());
     }
+    
+    @Test
+    public void testDistance() {
+        RDPoint rdp1 = new RDPoint("120.000", "500.000");
+
+        assertEquals(0, rdp1.getDistance(rdp1), 0.00D);
+        System.err.println(rdp1.getDistance(new RDPoint("120.000", "500.000")));
+        System.err.println(rdp1.getDistance(new RDPoint("120.010", "500.000")));
+        System.err.println(rdp1.getDistance(new RDPoint("120.000", "500.010")));
+        System.err.println(rdp1.getDistance(new RDPoint("120.010", "500.010")));
+        System.err.println(rdp1.getDistance(new RDPoint("119.990", "500.000")));
+    }
 
 }

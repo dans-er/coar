@@ -83,6 +83,14 @@ public class RDPoint
         return wgs84Point;
     }
     
+    public int getDistance(RDPoint other) {
+        double xdis = x - other.x;
+        double ydis = y - other.y;
+        int diagonal = (int) Math.sqrt(xdis * xdis + ydis * ydis);
+        int sign = xdis < 0 ? -1: ydis < 0 ? -1 : 1;
+        return diagonal * sign;
+    }
+    
     @Override
     public String toString()
     {

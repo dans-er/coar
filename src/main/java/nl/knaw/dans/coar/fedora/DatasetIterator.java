@@ -14,7 +14,7 @@ import com.yourmediashelf.fedora.client.response.FindObjectsResponse;
 public class DatasetIterator implements Iterator<String>
 {
     
-    public static final int MAX_RESULTS = 10;
+    public static final int MAX_RESULTS = 100;
     
     private static Logger logger = LoggerFactory.getLogger(DatasetIterator.class);
     

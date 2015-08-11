@@ -197,11 +197,11 @@ public class TikaProfile extends DBEntity
             TikaMeta tm = new TikaMeta("emdDCMIType", type);
             addMeta(tm);
         }
-        for (RDPoint point : emd.getSpatialPoints()) {
+        for (RDPoint point : emd.getSpatialPoints(datasetId)) {
             Spatial spatial = new Spatial("emd", point);
             addSpatial(spatial);
         }
-        for (RDBox box : emd.getSpatialBoxes()) {
+        for (RDBox box : emd.getSpatialBoxes(datasetId)) {
             Spatial spatial = new Spatial("emd", box);
             addSpatial(spatial);
         }
