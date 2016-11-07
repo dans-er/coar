@@ -91,7 +91,7 @@ public class WGS84Point
     }
     
     public String getGeoNamesPostalCodeURL(String username) {
-        // http://api.geonames.org/findNearbyPostalCodes?lat=52.713778&lng=4.931245&username=demo
+        // http://api.geonames.org/findNearbyPostalCodes?lat=52.71377&lng=4.931245&username=demo
         return new StringBuilder()
             .append("http://api.geonames.org/findNearbyPostalCodes?lat=")
             .append(latAsString())

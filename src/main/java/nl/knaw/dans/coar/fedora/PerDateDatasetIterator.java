@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class PerDateDatasetIterator extends DatasetIterator
 {
     
-    public static final String START_DATE = "2011-01-01";
+    public static final String START_DATE = "2010-01-01";
     public static final String FILE_LOCATION_FINISH = "datepointer.txt";
     
     private static Logger logger = LoggerFactory.getLogger(PerDateDatasetIterator.class);
@@ -45,6 +45,10 @@ public class PerDateDatasetIterator extends DatasetIterator
         testAll();
         count++;
         return allIterator.next();
+    }
+    
+    public String getDate() {
+        return getFormat().print(getDatePointer());
     }
     
     protected void testAll() {

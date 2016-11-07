@@ -9,9 +9,9 @@ import java.util.List;
 
 import javax.persistence.EntityTransaction;
 
-import nl.knaw.dans.coar.fedora.DatasetIterator;
 import nl.knaw.dans.coar.fedora.EMD;
 import nl.knaw.dans.coar.fedora.Fedora;
+import nl.knaw.dans.coar.fedora.PerDateDatasetIterator;
 import nl.knaw.dans.coar.rdb.JPAUtil;
 import nl.knaw.dans.coar.tika.TikaProfile;
 import nl.knaw.dans.coar.tika.TikaProfileStore;
@@ -29,23 +29,28 @@ public class Conveyor
     
     private static Logger logger = LoggerFactory.getLogger(Conveyor.class);
     
-    private final DatasetIterator datasetIterator;
+    private final PerDateDatasetIterator datasetIterator;
     private boolean savingFiles;
     
     private TikaProfileStore store;
+    private FlatDatasetStore datasetStore;
     private EntityTransaction currentTx;
+    private FlatDataset currentDataset;
     
     private Fedora fedora;
     private PDFProcessor pdfProcessor;
     
-    private ProfileIdentifierFilter idFilter;
+    //private ProfileIdentifierFilter idFilter;
+    private DatasetDiscriminator datasetDiscriminator;
     private int fileCount;
     
-    public Conveyor(DatasetIterator datasetIterator) {
+    public Conveyor(PerDateDatasetIterator datasetIterator) {
         this.datasetIterator = datasetIterator;
         fedora = Fedora.instance();
         store = new TikaProfileStore(JPAUtil.getEntityManager());
-        idFilter = new ProfileIdentifierFilter();
+        datasetStore = new FlatDatasetStore(JPAUtil.getEntityManager());
+        //idFilter = new ProfileIdentifierFilter();
+        datasetDiscriminator = new DatasetDiscriminator();
     }
     
     public PDFProcessor getPdfProcessor()
@@ -81,10 +86,33 @@ public class Conveyor
 
 
     public void run() {
-        //int countDatasets = 0;
+
         while (datasetIterator.hasNext()) {
             String datasetId = datasetIterator.next();
-            //countDatasets++;
+            currentDataset = new FlatDataset(datasetId);
+            
+            processDataset(datasetId);
+            
+            // write dataset properties
+            EntityTransaction tx = datasetStore.newTransAction();
+            tx.begin();
+            
+            FlatDataset dataset = datasetStore.findByNaturalId(datasetId);
+            if (dataset == null) {
+                dataset = new FlatDataset(datasetId);
+            }
+            dataset.setValues(currentDataset);
+            datasetStore.saveOrUpdate(dataset);
+            tx.commit();
+            datasetStore.clear();
+            currentDataset = null;
+        }
+    }
+
+    public void processDataset(String datasetId)
+    {
+        if (datasetDiscriminator.accept(datasetId)) {
+            
             EMD emd = null;
             try
             {
@@ -94,12 +122,18 @@ public class Conveyor
             {
                 logger.error("While fetching EMD for {}", datasetId);
                 Reporter.report("error_emd.csv", datasetId + ";" + e.getMessage());
-                continue;
+                return;
             }
-            if ("ARCHAEOLOGY".equals(emd.getMetadataFormat())
+            
+            String metadataFormat = emd.getMetadataFormat();
+            currentDataset.setMetadataFormat(metadataFormat);
+            
+            if ("ARCHAEOLOGY".equals(metadataFormat)
                     || emd.getAudiences().contains("easy-discipline:2")) {
                 processArchDataset(datasetId, emd);
             }
+        } else {
+            logger.info("Discriminating {}", datasetId);
         }
     }
     
@@ -117,16 +151,17 @@ public class Conveyor
             Reporter.report("error_file_ids.csv", datasetId + ";" + e.getMessage());
             return;
         }
-        if (fileIds.size() > 1000) {
-            logger.info("Too many files: {}", datasetId);
-            Reporter.report("gt_1000_files.csv", datasetId + ";" + fileIds.size());
-        }
+        
+        int filecount = fileIds.size();
+        currentDataset.setCountFiles(filecount);
+        
+        int pdfcount = 0;
         for (String fileId : fileIds) {
-            if (idFilter.accept(fileId)) {
                 try
                 {
                     DatastreamProfile dsProfile = fedora.getDSProfile(fileId);
                     if ("application/pdf".equals(dsProfile.getDsMIME())) {
+                        pdfcount++;
                         processPDF(datasetId, emd, fileId, dsProfile);
                     }
                 }
@@ -135,20 +170,13 @@ public class Conveyor
                     logger.error("While fetching dsProfile for {}", fileId);
                     Reporter.report("error_dsprofile.csv", datasetId + ";" + fileId + ";" + e.getMessage());
                 }
-            }
         }
+        currentDataset.setCountPdfs(pdfcount);
         
     }
 
     protected void processPDF(String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile)
     {
-//        if ("easy-file:1288551".equals(fileId) 
-//                || "easy-file:1298487".equals(fileId)
-//                || "easy-file:1302237".equals(fileId)) {
-//            logger.info("XXXXXXXXXXXX Not processing {}", fileId);
-//            return;
-//        }
-        logger.info(">>>>>>>>>>>>> Start processing pdf {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
         
         if (currentTx != null)
         {
@@ -165,46 +193,67 @@ public class Conveyor
         currentTx = store.newTransAction();
         currentTx.begin();
         
-        //TikaProfile tikaProfile = store.findByNaturalId(fileId);
-        try
-        {
-            TikaProfile profile = processProfile(datasetId, emd, fileId, dsProfile);
-            store.saveOrUpdate(profile);
+        Long id = store.getId(fileId);
+        
+        //
+        
+        if (id == null) {
+            TikaProfile testprofile = store.findByNaturalId(fileId);
+            if (testprofile != null) {
+                logger.warn("HIBERNATE NOT REALY WORKING {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
+                System.exit(-1);
+            }
+            logger.info("");
+            logger.info(">>>>>>>>>>>>> Start processing pdf {} {} {}", datasetId, fileId, dsProfile.getDsLabel());
+            TikaProfile profile = new TikaProfile(fileId, datasetId);
+            
+            //profile = new TikaProfile(fileId, datasetId);
+            profile.setDatasetId(datasetId);
+            profile.setDsLabel(dsProfile.getDsLabel());
+            profile.setDsMediatype(dsProfile.getDsMIME());
+            profile.setDsState(dsProfile.getDsState());
+            if (dsProfile.getDsSize() != null)
+                profile.setDsSize(dsProfile.getDsSize().longValue());
+            if (dsProfile.getDsCreateDate() != null)
+                profile.setDsCreationDate(dsProfile.getDsCreateDate().toGregorianCalendar().getTime());
+
+            profile.setEmd(emd);
+            if (datasetIterator != null)
+                logger.info("date {} Created new profile for {}", datasetIterator.getDate(), profile.getDsLabel());
+        
+            try
+            {
+                processProfile(profile, datasetId, emd, fileId, dsProfile);
+                store.saveOrUpdate(profile);
+                currentTx.commit();
+                fileCount++;
+            }
+            catch (Exception e)
+            {
+                logger.error("While storing profile for {}", fileId);
+                Reporter.report("error_file_data.csv", datasetId + ";" + fileId + ";" + e.getMessage());
+                currentTx.rollback();
+            } finally {
+                store.clear();
+                currentTx = null;
+                logger.info("///////// READY processing #{}# pdf {} {} {}", fileCount, datasetId, fileId, dsProfile.getDsLabel());
+            }
+        } else {
+            if (datasetIterator != null)
+                logger.info("XXXXXXXXXXX date {} Not redoing analysis of {}", datasetIterator.getDate(), dsProfile.getDsLabel());
             currentTx.commit();
             fileCount++;
-        }
-        catch (Exception e)
-        {
-            logger.error("While fetching dsProfile for {}", fileId);
-            Reporter.report("error_file_data.csv", datasetId + ";" + fileId + ";" + e.getMessage());
-            currentTx.rollback();
-        } finally {
             store.clear();
             currentTx = null;
-            logger.info("///////// READY processing #{}# pdf {} {} {}", fileCount, datasetId, fileId, dsProfile.getDsLabel());
+            return;
         }
+            
         ///////////////////////////////////////////////////////////////////////////
     }
     
 
-    private TikaProfile processProfile(String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile) throws Exception
+    private TikaProfile processProfile(TikaProfile profile, String datasetId, EMD emd, String fileId, DatastreamProfile dsProfile) throws Exception
     {
-
-        logger.info("Creating new profile for {}", dsProfile.getDsLabel());
-        
-        TikaProfile profile = new TikaProfile(fileId, datasetId);
-        
-        profile.setDatasetId(datasetId);
-        profile.setDsLabel(dsProfile.getDsLabel());
-        profile.setDsMediatype(dsProfile.getDsMIME());
-        profile.setDsState(dsProfile.getDsState());
-        if (dsProfile.getDsSize() != null)
-            profile.setDsSize(dsProfile.getDsSize().longValue());
-        if (dsProfile.getDsCreateDate() != null)
-            profile.setDsCreationDate(dsProfile.getDsCreateDate().toGregorianCalendar().getTime());
-
-        profile.setEmd(emd);
-        logger.info("Created new profile for {}", profile.getDsLabel());
         
         InputStream currentData = null;
         try

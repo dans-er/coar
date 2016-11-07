@@ -9,6 +9,8 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.yourmediashelf.fedora.client.FedoraClient;
 import com.yourmediashelf.fedora.client.FedoraCredentials;
@@ -20,6 +22,8 @@ public abstract class AbstractFedoraTest
 {
     
     public static final String FEDORA_VERSION = "3.5";
+    
+    private static Logger logger = LoggerFactory.getLogger(AbstractFedoraTest.class);
     
     private static final String props_location = "non-pub/remote_testing.properties";
     private static Properties props;
@@ -64,10 +68,18 @@ public abstract class AbstractFedoraTest
             FedoraClient fedora = new FedoraClient(credentials);
             FedoraRequest.setDefaultClient(fedora);
             
-            DescribeRepositoryResponse response = new DescribeRepository().execute();
-            String version = response.getRepositoryVersion();
-            assertEquals(FEDORA_VERSION, version);
-            System.out.println("Connection tested");
+            try
+            {
+                DescribeRepositoryResponse response = new DescribeRepository().execute();
+                String version = response.getRepositoryVersion();
+                assertEquals(FEDORA_VERSION, version);
+                System.out.println("Connection tested");
+            }
+            catch (Exception e)
+            {
+                logger.error("Could not connect to Fedora: ", e);
+                throw e;
+            }
         } else {
             System.err.println("Remote testing not enabled.");
         }

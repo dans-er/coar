@@ -20,3 +20,6 @@ datepointer.txt
 logs/
 non-pub/
 reports/
+.idea/
+coar.iml
+

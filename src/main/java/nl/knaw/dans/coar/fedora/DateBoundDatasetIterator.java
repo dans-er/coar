@@ -18,7 +18,7 @@ import com.yourmediashelf.fedora.client.response.FindObjectsResponse;
 public class DateBoundDatasetIterator extends DatasetIterator
 {
     
-    public static final String START_DATE = "2011-01-01";
+    public static final String START_DATE = "2010-01-01";
     public static final String FILE_LOCATION = "datepointer.txt";
     
     private static Logger logger = LoggerFactory.getLogger(DateBoundDatasetIterator.class);
@@ -54,6 +54,10 @@ public class DateBoundDatasetIterator extends DatasetIterator
             }
             return currentIdentifier != null;
         }
+    }
+    
+    public String getDate() {
+        return getFormat().print(getDatePointer());
     }
     
     public int getCount()

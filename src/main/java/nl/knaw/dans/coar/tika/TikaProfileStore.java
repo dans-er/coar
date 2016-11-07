@@ -1,5 +1,6 @@
 package nl.knaw.dans.coar.tika;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -34,6 +35,31 @@ public class TikaProfileStore extends AbstractGenericStore<TikaProfile, Long>
     public List<String> getDistinctDatasetIds() {
         String query = "select distinct(datasetId) from profile order by datasetId";
         return ((org.hibernate.jpa.HibernateEntityManager) getEntityManager()).getSession().createSQLQuery(query).list();
+    }
+    
+    public boolean recordExists(String fedoraFileIdentifier) {
+        String query = new StringBuilder()
+            .append("SELECT count(*) FROM profile where fedora_identifier = '")
+            .append(fedoraFileIdentifier)
+            .append("';")
+            .toString();
+        BigInteger bigint = (BigInteger) ((org.hibernate.jpa.HibernateEntityManager) getEntityManager()).getSession().createSQLQuery(query).uniqueResult();
+        return bigint.intValue() > 0;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public Long getId(String fedoraFileIdentifier) {
+        String query = new StringBuilder()
+            .append("SELECT tikaprofile_id FROM profile WHERE fedora_identifier = '")
+            .append(fedoraFileIdentifier)
+            .append("';")
+            .toString();
+        List<BigInteger> list = ((org.hibernate.jpa.HibernateEntityManager) getEntityManager()).getSession().createSQLQuery(query).list();
+        if (list.isEmpty()) {
+            return null;
+        }
+        BigInteger bigint = list.get(0);
+        return bigint.longValue();
     }
     
     // get the list of TikaProfiles for the specified datasetID
